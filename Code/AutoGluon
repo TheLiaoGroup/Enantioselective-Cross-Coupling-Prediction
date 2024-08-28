@@ -1,0 +1,35 @@
+# -*- coding: utf-8 -*-
+from autogluon.tabular import TabularDataset, TabularPredictor
+import pandas as pd
+
+train_data = TabularDataset('/home/YC/AG/MLDATA0820/train_stratifiedmix.csv')                           # 修改训练集路径
+subsample_size = 5480                                                                                   # 修改训练集数据量
+train_data = train_data.sample(n=subsample_size, random_state=0)
+label = '△△G (Kcal/mol)'                                                                               # 修改训练集目标数据lable
+train_data.head()
+print("Summary of class variable: \n", train_data[label].describe())
+save_path = '/home/YC/AG/MLDATA0820/stratifiedmix'                                                       # 修改训练模型文件夹路径
+predictor = TabularPredictor(label=label, path=save_path).fit(train_data)
+
+# time_limit = 10000                                                                                      # 如有需要高质量模型请使用这一部分代码
+# metric = 'mean_absolute_error'  
+# predictor = TabularPredictor(label, eval_metric=metric, path=save_path).fit(train_data, time_limit=time_limit, presets='best_quality')
+# predictor.leaderboard(test_data, silent=True)
+
+test_data = TabularDataset('/home/YC/AG/MLDATA0820/test_stratifiedrdmix.csv')                            # 修改测试集路径
+y_test = test_data[label]
+test_data_nolab = test_data.drop(columns=[label])
+predictor = TabularPredictor.load(save_path)
+y_pred = predictor.predict(test_data_nolab)
+
+pd.set_option('display.width',None)
+pd.set_option('display.max_rows',None)
+pd.set_option('display.max_colwidth',None)
+
+print("Predictions:  \n", y_pred)
+y=str(y_pred)
+ft = open('pred132.csv', 'w')                                                                           # 修改结果保存文件
+ft.write(y)
+ft.close()
+perf = predictor.evaluate_predictions(y_true=y_test, y_pred=y_pred, auxiliary_metrics=True)
+predictor.leaderboard(test_data, silent=True)
