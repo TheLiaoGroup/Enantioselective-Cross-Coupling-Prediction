@@ -1,0 +1,54 @@
+# -*- coding: utf-8 -*-
+import numpy as np
+import pandas as pd
+
+def kennard_stone(data, train_size):
+    n_samples = data.shape[0]
+    distances = np.zeros((n_samples, n_samples))
+    selected_indices = []
+
+    for i in range(n_samples):
+        for j in range(n_samples):
+            distances[i, j] = np.linalg.norm(data[i] - data[j])
+
+    selected_indices.append(0)
+
+    first_sample_idx = 0
+    max_distance = 0
+    for i in range(1, n_samples):
+        distance = distances[first_sample_idx, i]
+        if distance > max_distance:
+            max_distance = distance
+            second_sample_idx = i
+    selected_indices.append(second_sample_idx)
+
+    while len(selected_indices) < train_size:
+        max_min_distance = -1
+        next_sample_idx = None
+        for i in range(n_samples):
+            if i not in selected_indices:
+                min_distance = np.inf
+                for j in selected_indices:
+                    distance = distances[i, j]
+                    if distance < min_distance:
+                        min_distance = distance
+                if min_distance > max_min_distance:
+                    max_min_distance = min_distance
+                    next_sample_idx = i
+        selected_indices.append(next_sample_idx)
+
+    train_indices = selected_indices
+    test_indices = [i for i in range(n_samples) if i not in train_indices]
+    return train_indices, test_indices
+
+data = pd.read_csv('filename.csv').values
+
+train_size = int(0.7 * data.shape[0])
+
+train_indices, test_indices = kennard_stone(data, train_size)
+
+train_data = data[train_indices]
+test_data = data[test_indices]
+
+pd.DataFrame(train_data).to_csv('train_data.csv', index=False)
+pd.DataFrame(test_data).to_csv('test_data.csv', index=False)
