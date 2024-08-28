@@ -1,0 +1,62 @@
+# -*- codeing = utf-8 -*-
+from pdfminer.pdfparser import PDFParser
+from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.converter import PDFPageAggregator
+from pdfminer.layout import LAParams, LTTextBox, LTTextBoxHorizontal
+from pdfminer.pdfpage import PDFTextExtractionNotAllowed
+from pdfminer.pdfpage import PDFPage
+import glob
+import xlwt
+import time
+import string
+
+def get_file_list(root=".", file_suffix="*") -> list:
+    l = glob.glob("{}/*.".format(root) + file_suffix)
+    return l
+
+def pdf_to_txt(file_path: str):
+    rs = {}
+    my_pdf = open(file_path, 'rb')
+    print("File:", file_path)
+    par = PDFParser(my_pdf)
+    my_doc = PDFDocument(par)
+    if not my_doc.is_extractable:
+        raise PDFTextExtractionNotAllowed
+    else:
+        res = PDFResourceManager()
+        la = LAParams()
+        dev = PDFPageAggregator(res, laparams=la)
+        my_interpreter = PDFPageInterpreter(res, dev)
+        for pg in PDFPage.create_pages(my_doc):
+            my_interpreter.process_page(pg)
+            lt_dict = {}
+            rs[pg.pageid] = lt_dict
+            lt = dev.get_result()
+            for l in lt:
+                if isinstance(l, LTTextBox):
+                    lt_dict[l.index] = l.get_text().splitlines()
+    return rs
+
+fl = pdfTools.get_file_list(r"The file path","pdf")
+
+for flv in fl:
+    print("filepath:" + flv)
+    workbook = xlwt.Workbook(encoding='utf-8')
+    worksheet = workbook.add_sheet('My Worksheet')
+    worksheet.write(0, 1, label="name")
+    worksheet.write(0, 2, label="ee")
+    i = 2
+    for key, value in pdfTools.pdf_to_txt(flv).items():
+        for key1, value1 in value.items():
+            for vstr in value1:
+
+                if "S)-" in vstr or "E)-" in vstr or "Z)-" in vstr or "(+)-" in vstr or "(-)-" in vstr or "R)-" in vstr :
+                    worksheet.write(i, 1, label=vstr.split(" ",0)[0])
+                    i += 1
+                vstrp = ''.join(vstr.split());
+                if "%ee" in vstrp:
+                    vp = vstrp.split("%ee")[0]
+                    worksheet.write(i-1, 2, label=vp[-2:])
+                    i += 1
+    workbook.save(flv+str(time.time())+'.xls')
